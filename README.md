@@ -1,1 +1,1 @@
-Hello
+Download https://github.com/sagasa/EFTServerCheck/releases
