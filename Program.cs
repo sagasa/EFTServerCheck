@@ -2,6 +2,8 @@
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Text;
+using EFTServerCheck;
+using System.Diagnostics;
 
 Regex RegSessionInfo = new Regex(@"^(.*?)\|(?:.*)Ip: (.*?),(?:.*)Location: (.*?),(?:.*)shortId: (.*?)'");
 Regex RegTime = new Regex(@"^(.*?)\|");
@@ -28,18 +30,35 @@ catch (Exception e)
     Console.ReadLine();
 }
 
+SessionManager.Root = config.Path;
 
+
+Stopwatch stopwatch = new Stopwatch();
+for (int i = 0; i < 20; i++)
+{
+    stopwatch.Restart();
+    SessionManager.UpdateLogs();
+    stopwatch.Stop();
+    Console.WriteLine(stopwatch.Elapsed.TotalMilliseconds.ToString("0.00"));
+    Thread.Sleep(1000);
+}
 
 string Dir = config.Path;//"G:\\Battlestate Games\\EFT\\Logs";
 
+
+
+Console.ReadLine();
+
 try
 {
-    
+
+    Console.WriteLine(ApiManager.GetLocation("24.48.0.1").Result);
+
+
     var dirs = from dir in Directory.GetDirectories(Dir)
                let time = Directory.GetCreationTime(dir).ToBinary()
                orderby time descending
                select dir;
-
 
 
 
@@ -154,6 +173,8 @@ try
         viewSessions.Add(session);
         ipMap[session.Ip] = "Nan";
     }
+
+    
 
     //APIから位置を取得
     using (var client = new HttpClient())
@@ -290,8 +311,11 @@ catch (Exception e)
 }
 finally
 {
+    
     Console.ReadLine();
 }
+
+
 
 
 static void PrintCenter(String text,char fill,ConsoleColor textColor = ConsoleColor.White, ConsoleColor fillColor = ConsoleColor.White)
