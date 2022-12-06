@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using System.Text;
 using EFTServerCheck;
 using System.Diagnostics;
+using static EFTServerCheck.ViewManager;
 
 Regex RegSessionInfo = new Regex(@"^(.*?)\|(?:.*)Ip: (.*?),(?:.*)Location: (.*?),(?:.*)shortId: (.*?)'");
 Regex RegTime = new Regex(@"^(.*?)\|");
@@ -18,7 +19,6 @@ if (!File.Exists(ConfigPath))
     File.WriteAllText(ConfigPath, JsonSerializer.Serialize(config));
 }
 
-
 try
 {
     config = JsonSerializer.Deserialize<Config>(WriteSafeReadAllString(ConfigPath))!;
@@ -26,33 +26,43 @@ try
 catch (Exception e)
 {
     File.WriteAllText(ConfigPath, JsonSerializer.Serialize(config));
-    Console.WriteLine("config file is broken");
+    PrintLine("config file is broken");
     Console.ReadLine();
 }
 
 SessionManager.Root = config.Path;
 
+ApiManager.ReqLocation("24.48.0.1").ContinueWith(e => PrintLine("Out 0 " + e.Result));
+ApiManager.ReqLocation("24.48.0.1").ContinueWith(e => PrintLine("Out 1 " + e.Result));
 
-Stopwatch stopwatch = new Stopwatch();
-for (int i = 0; i < 20; i++)
+var en = PrintLine("Test");
+var l1 = PrintLine("= line1 =");
+PrintLine("= line2 =");
+for (int i = 0; i < 100; i++)
 {
-    stopwatch.Restart();
-    SessionManager.UpdateLogs();
-    stopwatch.Stop();
-    Console.WriteLine(stopwatch.Elapsed.TotalMilliseconds.ToString("0.00"));
-    Thread.Sleep(1000);
+    en.Replace("Test " + i);
+    Thread.Sleep(10);
 }
+en.Delete();
+l1.Delete();
+
+for (int i = 0; i < 2; i++)
+{
+    SessionManager.UpdateLogs();
+    Console.ReadLine();
+}
+
+var pos = Console.GetCursorPosition();
+
 
 string Dir = config.Path;//"G:\\Battlestate Games\\EFT\\Logs";
 
 
 
-Console.ReadLine();
 
 try
 {
 
-    Console.WriteLine(ApiManager.GetLocation("24.48.0.1").Result);
 
 
     var dirs = from dir in Directory.GetDirectories(Dir)
@@ -87,7 +97,7 @@ try
                         }
                         else
                         {
-                            Console.WriteLine($"error cant parse string {line}");
+                            PrintLine($"error cant parse string {line}");
                         }
                     }
                     //サーバー接続のログ
@@ -105,7 +115,7 @@ try
                             var map = match.Groups[3].Value;
                             var id = match.Groups[4].Value;
 
-                            //Console.WriteLine($"time:{time} ip:{ip} map:{map} id:{id}");
+                            //PrintLine($"time:{time} ip:{ip} map:{map} id:{id}");
 
                             var data = new SessionData(ip, map, id, time);
 
@@ -142,7 +152,7 @@ try
                         }
                         else
                         {
-                            Console.WriteLine($"error cant parse string {line}");
+                            PrintLine($"error cant parse string {line}");
                         }
 
                     }
@@ -210,8 +220,8 @@ try
 
             if (res.StatusCode != System.Net.HttpStatusCode.OK)
             {
-                Console.WriteLine("api error");
-                Console.WriteLine(res);
+                PrintLine("api error");
+                PrintLine(res);
             }
             else
             {
@@ -226,7 +236,7 @@ try
                 }
             }
         }
-        //Console.WriteLine($"IP: {IP}");
+        //PrintLine($"IP: {IP}");
     }
 
     //情報の集計
@@ -264,13 +274,13 @@ try
         {
             Console.ForegroundColor = ConsoleColor.Green;
         }
-        Console.WriteLine($"Time: {session.Time.ToString("yyyy/MM/dd HH:mm:ss")}   Map: {ConvertMapName(session.Map).PadRight(14)} Server: {ipMap[session.Ip]}");
+        PrintLine($"Time: {session.Time.ToString("yyyy/MM/dd HH:mm:ss")}   Map: {ConvertMapName(session.Map).PadRight(14)} Server: {ipMap[session.Ip]}");
     }
     Console.ResetColor();
 
-    Console.WriteLine();
+    PrintLine();
     Console.ForegroundColor = ConsoleColor.Cyan;
-    Console.WriteLine();
+    PrintLine();
 
 
     PrintCenter($"total count {sessions.Count}", ' ', ConsoleColor.Blue);
@@ -290,24 +300,24 @@ try
             count += text.Length;
             if (Console.WindowWidth < count+10)
             {
-                Console.WriteLine();
+                PrintLine();
                 count = text.Length;
             }
             Console.Write(text);
             
         }
-        Console.WriteLine();
+        PrintLine();
     }
 }
 catch (DirectoryNotFoundException e)
 {
-    Console.WriteLine($"cant find log dir at '{Dir}'. check config file");
+    PrintLine($"cant find log dir at '{Dir}'. check config file");
 
 }
 catch (Exception e)
 {
 
-    Console.WriteLine(e);
+    PrintLine(e);
 }
 finally
 {
@@ -329,7 +339,7 @@ static void PrintCenter(String text,char fill,ConsoleColor textColor = ConsoleCo
     for (int i = 0; i < (Console.WindowWidth - text.Length) / 2 - 4; i++)
         Console.Write(fill);
     Console.ResetColor();
-    Console.WriteLine();
+    PrintLine();
 }
 
 static string WriteSafeReadAllString(String path)

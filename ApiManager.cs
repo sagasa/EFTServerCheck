@@ -4,16 +4,21 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using static EFTServerCheck.ViewManager;
 
 namespace EFTServerCheck
 {
     internal class ApiManager
     {
-        private static readonly Dictionary<string, string> ip2location=new();
+        private static readonly Dictionary<string, Task<string>> ip2location=new();
 
-        public static Task<string> GetLocation(string ip)
+        public static Task<string> ReqLocation(string ip)
         {
-            return Task.Factory.StartNew(() => {
+            if (ip2location.ContainsKey(ip))
+            {
+                return ip2location[ip];
+            }
+            var task = Task.Factory.StartNew(() => {
                 using (var client = new HttpClient())
                 {
                     var url = @$"http://ip-api.com/json/{ip}?fields=status,countryCode,city";
@@ -30,9 +35,11 @@ namespace EFTServerCheck
                     return location.Format();
                 }
             });
+            ip2location[ip] = task;
+            return task;
         }
 
-        public static Task<Dictionary<string,string>> GetLocation(IList<string> ips)
+        public static Task<Dictionary<string,string>> ReqLocation(IList<string> ips)
         {
             return Task.Factory.StartNew(() => {
                 using (var client = new HttpClient())
