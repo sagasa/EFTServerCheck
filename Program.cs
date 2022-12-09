@@ -31,40 +31,59 @@ catch (Exception e)
 }
 
 SessionManager.Root = config.Path;
+SessionManager.Limit = config.Limit;
 
-ApiManager.ReqLocation("24.48.0.1").ContinueWith(e => PrintLine("Out 0 " + e.Result));
-ApiManager.ReqLocation("24.48.0.1").ContinueWith(e => PrintLine("Out 1 " + e.Result));
 
-var en = PrintLine("Test");
-var l1 = PrintLine("= line1 =");
-PrintLine("= line2 =");
-for (int i = 0; i < 100; i++)
+/*
+var list = new List<(int, ILine)>();
+
+for (int i = 0; i < 40; i++)
 {
-    en.Replace("Test " + i);
-    Thread.Sleep(10);
-}
-en.Delete();
-l1.Delete();
-
-for (int i = 0; i < 2; i++)
-{
-    SessionManager.UpdateLogs();
-    Console.ReadLine();
+    PrintLine("T "+i);
+   
 }
 
-var pos = Console.GetCursorPosition();
+for (int i = 0; i < 40; i++)
+{
+    list.Add((i, PrintLine("T2 " + i)));
+}
+
+list.ForEach(e => e.Item2.Replace("R2 " + e.Item1));
+
+SortedList<int, string> SL = new();
+
+SL[0] = "index0";
+SL[1] = "index1";
+SL[4] = "index2";
+
+SL[6] = "index3";
+SL[7] = "index4";
+
+
+
+PrintLine("D 0");
+var d = PrintLine("D 1");
+PrintLine("D 2");
+d.Delete();
+PrintLine("D 3");
+//Move(70, -10);
+Console.ReadLine();
+//*/
 
 
 string Dir = config.Path;//"G:\\Battlestate Games\\EFT\\Logs";
 
 
 
-
 try
 {
+    while (true)
+    {
+        SessionManager.UpdateLogs();
+        Thread.Sleep(900);
+    }
 
-
-
+    //以降到達しません
     var dirs = from dir in Directory.GetDirectories(Dir)
                let time = Directory.GetCreationTime(dir).ToBinary()
                orderby time descending

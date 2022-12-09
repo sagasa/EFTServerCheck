@@ -10,95 +10,81 @@ namespace EFTServerCheck
 {
     internal class ApiManager
     {
-        private static readonly Dictionary<string, Task<string>> ip2location=new();
+        private static readonly HttpClient _client = new();
+        private static readonly Dictionary<string, Task<string>> _ip2location = new();
 
         public static Task<string> ReqLocation(string ip)
         {
-            if (ip2location.ContainsKey(ip))
+            if (_ip2location.ContainsKey(ip))
             {
-                return ip2location[ip];
+                return _ip2location[ip];
             }
-            var task = Task.Factory.StartNew(() => {
-                using (var client = new HttpClient())
-                {
-                    var url = @$"http://ip-api.com/json/{ip}?fields=status,countryCode,city";
-                    var response = client.GetAsync(url).Result;
+            var task = Task.Factory.StartNew(() =>
+            {
 
-                    if(response.StatusCode != System.Net.HttpStatusCode.OK)
-                        throw new Exception($"api call failed code={response.StatusCode} url={url}");   
-                    
-                    var location = JsonSerializer.Deserialize<LocationResponce>(response.Content.ReadAsStringAsync().Result)!;
+                //PrintLine("Make Req");
 
-                    if (location.status != "success")
-                        throw new Exception($"api call failed url={url}");
+                var url = @$"http://ip-api.com/json/{ip}?fields=status,countryCode,city";
+                var response = _client.GetAsync(url).Result;
 
-                    return location.Format();
-                }
+                if (response.StatusCode != System.Net.HttpStatusCode.OK)
+                    throw new Exception($"api call failed code={response.StatusCode} url={url}");
+
+                var location = JsonSerializer.Deserialize<LocationResponce>(response.Content.ReadAsStringAsync().Result)!;
+
+                if (location.status != "success")
+                    throw new Exception($"api call failed url={url}");
+
+                return location.Format();
+
             });
-            ip2location[ip] = task;
+            _ip2location[ip] = task;
             return task;
         }
 
-        public static Task<Dictionary<string,string>> ReqLocation(IList<string> ips)
+        public static void ReqLocation(ISet<string> ips)
         {
-            return Task.Factory.StartNew(() => {
-                using (var client = new HttpClient())
+            ips.ExceptWith(_ip2location.Keys);
+            //PrintLine("Make batch req");
+            List<string> reqList = new();
+            void dispatch()
+            {
+                var json = @$"[{string.Join(",", reqList.Select(ip => @"{""query"": """ + ip + @""", ""fields"": ""status,city,countryCode,query""}").ToList())}]";
+                var content = new StringContent(json, Encoding.UTF8);
+
+                var task = _client.PostAsync("http://ip-api.com/batch", content).ContinueWith(response =>
                 {
-                    Dictionary<string, string> result = new();
+                    if (response.Result.StatusCode != System.Net.HttpStatusCode.OK)
+                        throw new Exception($"api call failed code={response.Result.StatusCode}");
+                    var list = JsonSerializer.Deserialize<IList<LocationResponce>>(response.Result.Content.ReadAsStringAsync().Result)!;
+                    return list.ToDictionary(res => res.query, res => res.status == "success" ? $"{res.countryCode} {res.city}" : "error");
+                });
 
-                    List<string> reqList = new();
-                    List<Task<HttpResponseMessage>> taskList = new();
-                    void dispatch()
-                    {
-                        var json = @$"[{string.Join(",", reqList)}]";
-                        reqList.Clear();
-                        var content = new StringContent(json, Encoding.UTF8);
-                        taskList.Add(client.PostAsync("http://ip-api.com/batch", content)); // POST
-                    }
 
-                    //100件で分割
-                    int count = 0;
-                    foreach (var ip in ips)
+                //通知
+                reqList.ForEach(ip =>
+                {
+                    if (!_ip2location.ContainsKey(ip))
                     {
-                        reqList.Add(@"{""query"": """ + ip + @""", ""fields"": ""status,city,countryCode,query""}");
-                        result[ip] = "N/A";
-                        if (100 <= ++count)
-                        {
-                            dispatch();
-                            count = 0;
-                        }
+                        _ip2location[ip] = task.ContinueWith(res => res.Result[ip]);
                     }
+                });
+                reqList.Clear();
+            }
+
+            //100件で分割
+            int count = 0;
+            foreach (var ip in ips)
+            {
+                reqList.Add(ip);
+
+                if (100 <= ++count)
+                {
                     dispatch();
-
-                    
-
-                    foreach (var task in taskList)
-                    {
-                        var res = task.Result;
-
-                        if (res.StatusCode != System.Net.HttpStatusCode.OK)
-                        {
-                            Console.WriteLine("api error");
-                            Console.WriteLine(res);
-                        }
-                        else
-                        {
-                            IList<LocationResponce> responces = JsonSerializer.Deserialize<IList<LocationResponce>>(res.Content.ReadAsStringAsync().Result)!;
-
-                            foreach (var responce in responces)
-                            {
-                                if (responce.status == "success")
-                                {
-
-                                    result[responce.query] = $"{responce.countryCode} {responce.city}";
-                                }
-                            }
-                        }
-                    }
-                    return result;
+                    count = 0;
                 }
-                
-            });
+            }
+            dispatch();
         }
 
 

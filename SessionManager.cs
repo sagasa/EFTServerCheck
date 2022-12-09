@@ -18,7 +18,7 @@ namespace EFTServerCheck
 
 
         internal static string Root = "";
-        internal static int Limit = 6;
+        internal static int Limit = 20;
         //古いものから順に格納
         private static List<SessionData> _sessions = new();
 
@@ -29,15 +29,23 @@ namespace EFTServerCheck
 
         public static void UpdateLogs()
         {
+            //古いものの時間表示更新
+            for (int i = _sessions.Count - 1; i >= 0; i--)
+            {
+                if (45 < _sessions[i].Elapsed().TotalMinutes)
+                    break;
+                _sessions[i].Print();
+            }
+
             if (_latestLog != null)
             {
                 var sessions = ReadLog(_latestLog, prev: _sessions.LastOrDefault());
                 sessions.Reverse();
                 _sessions.AddRange(sessions);
+                //新しい物を表示
+                sessions.ForEach(session => session.Print());
             }
             CheckDir();
-
-            _sessions.ForEach(session => session.Print());
         }
 
         private static void CheckDir()
@@ -52,7 +60,7 @@ namespace EFTServerCheck
 
             var sessions = new List<SessionData>();
             //初回なら制限を適応
-            var limit = _dirs.Count == 0 ? Limit : int.MaxValue;
+            var limit = _dirs.Count == 0&&Limit!=-1 ? Limit : int.MaxValue;
 
             SessionData? prev = _sessions.Count == 0 ? null : _sessions[_sessions.Count - 1];
             SessionData? next = null;
@@ -88,8 +96,14 @@ namespace EFTServerCheck
             }
 
             sessions.Reverse();
-            _sessions.AddRange(sessions);
 
+            if(sessions.Count != 0)
+                ApiManager.ReqLocation(sessions.Select(s => s.Ip).ToHashSet());
+
+            //新しい物を表示
+            sessions.ForEach(session => session.Print());
+
+            _sessions.AddRange(sessions);
         }
 
         //新規追加分を読み込む 新しい順
@@ -139,13 +153,10 @@ namespace EFTServerCheck
                         var data = new SessionData(ip, map, id, time);
 
                         //開始時間がないならロスコネ判定
-                        if (lastStartTime == null)
-                        {
-                            data.LostConn = true;
-                        }
-                        else
+                        if (lastStartTime != null&& !data.LostConn)
                         {
                             data.Time = (DateTime)lastStartTime;
+                            data.StartNotFound = false;
                             lastStartTime = null;
                         }
                         //古いものと比較してロスコネ判定
@@ -174,12 +185,18 @@ namespace EFTServerCheck
                 }
 
             }
+            //前のログの続きを見つけたなら
+            if (lastStartTime != null&& prev!=null&&prev.StartNotFound && !prev.LostConn)
+            {
+                prev.Time = (DateTime)lastStartTime;
+                prev.StartNotFound = false;
+            }
             return sessions;
 
 
         }
 
-        static string[] WriteSafeReadAllLines(String path, long start)
+        static string[] WriteSafeReadAllLines(string path, long start)
         {
             using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
             using (var sr = new StreamReader(stream))
@@ -229,22 +246,57 @@ namespace EFTServerCheck
             public void Replace()
             {
                 if (_line == null) return;
-                var text = $"Time: {Time.ToString("yyyy/MM/dd HH:mm:ss")}   Map: {ConvertMapName(Map).PadRight(14)} Server: {Location.PadRight(30)}";
-                var color = LostConn ? ConsoleColor.DarkRed : ConsoleColor.Green;
+
+                var diff = Elapsed();
+
+                var remaining = "Timeout";
+                //経過時間とレイド時間を比較
+                var raidTime = GetRaidTime(Map);
+                if (diff.TotalMinutes< raidTime)
+                {
+                    var r = new TimeSpan(0, raidTime, 0) - diff;
+                    remaining = StartNotFound ? "--:--" : $"{r.ToString(@"mm\:ss")}";
+                }
+                var text = $"Time: {Time.ToString("yyyy/MM/dd HH:mm:ss")}   Map: {ConvertMapName(Map).PadRight(14)} Server: {Location.PadRight(20)} Raid: {remaining.PadRight(10)}";
+                var color = StartNotFound? FOREGROUND_YELLOW : LostConn ? FOREGROUND_RED : FOREGROUND_GREEN;
                 _line.Replace(text, color);
             }
 
-            private LineEntry? _line;
+            public TimeSpan Elapsed()
+            {
+                return DateTime.Now - Time;
+            }
+
+            private ILine? _line;
+            private bool _timeout;
 
             public string Location = "Checking...";
             public string Ip;
             public string Map;
             public string Id;
             public bool LostConn = false;
+            public bool StartNotFound = true;
             public DateTime Time;
 
         }
 
+        static int GetRaidTime(string name)
+        {
+            
+            switch (name)
+            {
+                case "factory4_day":
+                    return 20;
+                case "factory4_night":
+                    return 25;
+                case "laboratory":
+                    return 35;
+                case "Shoreline":
+                    return 45;
+                default:
+                    return 40;
+            }
+        }
 
         static string ConvertMapName(string name)
         {
