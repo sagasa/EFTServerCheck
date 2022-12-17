@@ -32,7 +32,7 @@ namespace EFTServerCheck
             //古いものの時間表示更新
             for (int i = _sessions.Count - 1; i >= 0; i--)
             {
-                if (45 < _sessions[i].Elapsed().TotalMinutes)
+                if (45 <= _sessions[i].Elapsed().TotalMinutes)
                     break;
                 _sessions[i].Print();
             }
