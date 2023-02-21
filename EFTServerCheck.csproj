@@ -6,6 +6,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <ApplicationIcon>icon.ico</ApplicationIcon>
+    <UseWindowsForms>True</UseWindowsForms>
+    <UseWPF>False</UseWPF>
+    <StartupObject>EFTServerCheck.ServerChecker</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>

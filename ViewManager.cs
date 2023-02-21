@@ -135,6 +135,7 @@ namespace EFTServerCheck
             try
             {
                 int p = pos ?? (_lines.Count == 0 ? 0 : _lines.Last().Key + 1);
+                
                 if (Console.BufferHeight - 1 <= p)
                 {
                     Console.BufferHeight += CONSOLE_APPEND_SIZE;

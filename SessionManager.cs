@@ -213,8 +213,15 @@ namespace EFTServerCheck
         }
 
 
-        static string ToLogPath(string dir) =>
-            Path.Combine(dir, Path.GetFileName(dir)[4..] + " application.log");
+        static string ToLogPath(string dir)
+        {
+            try
+            {
+                return Path.Combine(dir, Path.GetFileName(dir)[4..] + " application.log");
+            }catch { 
+                return dir;
+            }
+        }
 
 
         public class SessionData
