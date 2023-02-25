@@ -300,6 +300,8 @@ namespace EFTServerCheck
                     return 35;
                 case "Shoreline":
                     return 45;
+                case "TarkovStreets":
+                    return 50;
                 default:
                     return 40;
             }
