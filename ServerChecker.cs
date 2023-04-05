@@ -5,7 +5,10 @@ using System.Text;
 using EFTServerCheck;
 using System.Diagnostics;
 using System.Windows.Forms;
+
+
 using static EFTServerCheck.ViewManager;
+using System.Reflection;
 
 namespace EFTServerCheck
 {
@@ -14,7 +17,10 @@ namespace EFTServerCheck
         [STAThread]
         static void Main()
         {
-            
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            AssemblyName asmName = assembly.GetName();
+            Console.Title = $"EFTServerChecker{asmName.Version}";
+
             var checker = new ServerChecker();
             checker.LoadConfig();
             checker.RunLoop();

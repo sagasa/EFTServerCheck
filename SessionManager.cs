@@ -32,7 +32,7 @@ namespace EFTServerCheck
             //古いものの時間表示更新
             for (int i = _sessions.Count - 1; i >= 0; i--)
             {
-                if (45 <= _sessions[i].Elapsed().TotalMinutes)
+                if (50 <= _sessions[i].Elapsed().TotalMinutes)
                     break;
                 _sessions[i].Print();
             }
@@ -264,7 +264,7 @@ namespace EFTServerCheck
                     var r = new TimeSpan(0, raidTime, 0) - diff;
                     remaining = StartNotFound ? "--:--" : $"{r.ToString(@"mm\:ss")}";
                 }
-                var text = $"Time: {Time.ToString("yyyy/MM/dd HH:mm:ss")}   Map: {ConvertMapName(Map).PadRight(14)} Server: {Location.PadRight(20)} Raid: {remaining.PadRight(10)}";
+                var text = $"Time: {Time.ToString("yyyy/MM/dd HH:mm:ss")}   Map: {ConvertMapName(Map).PadRight(14)} Server: {Location.PadRight(20)} IP:{FormatIP(Ip).PadRight(20)} Raid: {remaining.PadRight(10)}";
                 var color = StartNotFound? FOREGROUND_YELLOW : LostConn ? FOREGROUND_RED : FOREGROUND_GREEN;
                 _line.Replace(text, color);
             }
@@ -275,7 +275,6 @@ namespace EFTServerCheck
             }
 
             private ILine? _line;
-            private bool _timeout;
 
             public string Location = "Checking...";
             public string Ip;
@@ -285,6 +284,11 @@ namespace EFTServerCheck
             public bool StartNotFound = true;
             public DateTime Time;
 
+        }
+
+        static string FormatIP(string ip)
+        {
+            return string.Join(".", ip.Split(".").Select(addr => addr.PadLeft(3)));
         }
 
         static int GetRaidTime(string name)
