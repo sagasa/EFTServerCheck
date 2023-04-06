@@ -97,9 +97,11 @@ namespace EFTServerCheck
 
             sessions.Reverse();
 
-            if(sessions.Count != 0)
-                ApiManager.ReqLocation(sessions.Select(s => s.Ip).ToHashSet());
 
+            if (sessions.Count != 0)
+            {
+                ApiManager.ReqLocation(sessions.Select(s => s.Ip).ToHashSet());
+            }
             //新しい物を表示
             sessions.ForEach(session => session.Print());
 
@@ -239,14 +241,17 @@ namespace EFTServerCheck
             }
             public void Print()
             {
-                //サーバー名を取得する
-                ApiManager.ReqLocation(Ip).ContinueWith(loc =>
-                {
-                    Location = loc.Result;
-                    Replace();
-                });
                 if (_line == null)
+                {
                     _line = PrintLine();
+
+                    //サーバー名を取得する
+                    ApiManager.ReqLocation(Ip).ContinueWith(loc =>
+                    {
+                        Location = loc.Result;
+                        Replace();
+                    });
+                }
                 Replace();
                 
             }

@@ -17,19 +17,30 @@ namespace EFTServerCheck
         [STAThread]
         static void Main()
         {
-            Assembly assembly = Assembly.GetExecutingAssembly();
-            AssemblyName asmName = assembly.GetName();
-            Console.Title = $"EFTServerChecker{asmName.Version}";
+
+            try
+            {
+                Assembly assembly = Assembly.GetExecutingAssembly();
+                AssemblyName asmName = assembly.GetName();
+                Console.Title = $"EFTServerChecker{asmName.Version}";
+
+                Task.Factory.StartNew(Updater.CheckUpdate);
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e);
+                Console.ReadLine();
+            }
 
             var checker = new ServerChecker();
             checker.LoadConfig();
-            checker.RunLoop();
+            checker.Run();
         }
 
         const string ConfigPath = "./config.json";
 
 
-        void RunLoop()
+        void Run()
         {
             try
             {
@@ -80,7 +91,7 @@ namespace EFTServerCheck
                 config.Limit = SessionManager.Limit;
 
                 File.WriteAllText(ConfigPath, JsonSerializer.Serialize(config));
-                RunLoop();
+                Run();
             }
         }
 

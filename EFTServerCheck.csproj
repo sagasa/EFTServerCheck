@@ -9,8 +9,11 @@
     <UseWindowsForms>True</UseWindowsForms>
     <UseWPF>False</UseWPF>
     <StartupObject>EFTServerCheck.ServerChecker</StartupObject>
-    <AssemblyVersion>1.5.0.0</AssemblyVersion>
+    <AssemblyVersion>1.6.0.0</AssemblyVersion>
     <FileVersion>$(AssemblyVersion)</FileVersion>
+    <PackageId>$(AssemblyName)</PackageId>
+    <Authors>sagasa</Authors>
+    <AssemblyName>EFTServerChecker</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>

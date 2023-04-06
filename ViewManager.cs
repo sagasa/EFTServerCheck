@@ -21,7 +21,7 @@ namespace EFTServerCheck
         public const ushort FOREGROUND_GREEN = 0x0002; // text color contains green.
         public const ushort FOREGROUND_RED = 0x0004; // text color contains red.
 
-        public const ushort FOREGROUND_CYAN = FOREGROUND_GREEN | FOREGROUND_RED;
+        public const ushort FOREGROUND_CYAN = FOREGROUND_GREEN | FOREGROUND_BLUE;
         public const ushort FOREGROUND_MAGENTA = FOREGROUND_RED | FOREGROUND_BLUE;
         public const ushort FOREGROUND_YELLOW = FOREGROUND_RED | FOREGROUND_GREEN;
 
